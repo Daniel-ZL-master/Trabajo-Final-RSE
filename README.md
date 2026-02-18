@@ -12,6 +12,6 @@ El trabajo consta de un coche a radio control sobre el cual se hara detección d
 - Con el código implementado generar una placa hardware que contenga lo minimo para que este funcione eliminando todo aquello que se considera accesorio del arduino Nano BLE 33
 
 ## Papers de referencia
-- [Effective Car Collision Detection with Mobile Phone Only](https://link.springer.com/chapter/10.1007/978-3-030-77980-1_24)
+- [Effective Car Collision Detection with Mobile Phone Only](https://www.researchgate.net/publication/352251445_Effective_Car_Collision_Detection_with_Mobile_Phone_Only)
 - [Review for Accident Detection and Alerting System](https://www.irjet.net/archives/V11/i4/IRJET-V11I4191.pdf)
 - [Real-Time Vehicle Emergency Braking Detection with Moving Average Method Based on Accelerometer and Gyroscope Data](https://www.mdpi.com/2624-8921/7/4/106)
