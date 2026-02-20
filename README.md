@@ -15,3 +15,10 @@ El trabajo consta de un coche a radio control sobre el cual se hara detección d
 - [Effective Car Collision Detection with Mobile Phone Only](https://www.researchgate.net/publication/352251445_Effective_Car_Collision_Detection_with_Mobile_Phone_Only)
 - [Review for Accident Detection and Alerting System](https://www.irjet.net/archives/V11/i4/IRJET-V11I4191.pdf)
 - [Real-Time Vehicle Emergency Braking Detection with Moving Average Method Based on Accelerometer and Gyroscope Data](https://www.mdpi.com/2624-8921/7/4/106)
+
+## Eventos a detectar
+- Colision lateral izquierda en parado
+- Colision lateral derecha en parado
+- Colision por alcance en parado y en movimiento
+- Colision frontal en movimiento
+
