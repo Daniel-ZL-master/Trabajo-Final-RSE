@@ -1,44 +1,58 @@
 #include <Arduino.h>
+#include <ArduinoBLE.h>
 #include <Arduino_BMI270_BMM150.h>
 #include "BBTimer.hpp"
 
-BBTimer timer(BB_TIMER1);
+BLEService sensorService("180D");
+// Cambiamos a BLERead | BLENotify para enviar bytes binarios (24 bytes = 6 floats)
+BLECharacteristic dataChar("2A57", BLERead | BLENotify, 24);
 
+BBTimer sampleTimer(BB_TIMER0);
 volatile bool readyToRead = false;
 
-// Esta función se ejecuta por hardware cada 10ms
-void triggerSample() {
-    readyToRead = true;
+void timerCallback() { readyToRead = true; }
+
+void setup()
+{
+    if (!IMU.begin())
+        while (1)
+            ;
+    if (!BLE.begin())
+        while (1)
+            ;
+    BLE.setConnectionInterval(80, 160);
+    BLE.setLocalName("RC_Car_IMU");
+    BLE.setAdvertisedService(sensorService);
+    sensorService.addCharacteristic(dataChar);
+    BLE.addService(sensorService);
+    BLE.advertise();
+    BLE.setEventHandler(BLEConnected, [](BLEDevice central)
+                        { digitalWrite(LED_BUILTIN, HIGH); });
+    BLE.setEventHandler(BLEDisconnected, [](BLEDevice central)
+                        { digitalWrite(LED_BUILTIN, LOW); });
+    delay(500);
+    // Ajustamos a 20ms (50Hz) para mayor estabilidad BLE
+    sampleTimer.setupTimer(20000, timerCallback);
+    sampleTimer.timerStart();
 }
 
-void setup() {
-    Serial.begin(115200);
-    while (!Serial);
+void loop()
+{
+    if (!BLE.connected()) {
+    BLE.advertise();
+  }
+    BLEDevice central = BLE.central();
+    if (central && central.connected())
+    {
+        if (readyToRead)
+        {
+            readyToRead = false;
+            float data[6];
+            IMU.readAcceleration(data[0], data[1], data[2]);
+            IMU.readGyroscope(data[3], data[4], data[5]);
 
-    if (!IMU.begin()) {
-        while (1) {Serial.println("Failed to initialize IMU!");}
-    }
-
-    timer.setupTimer(10000, triggerSample);
-    timer.timerStart();
-}
-
-void loop() {
-    if (readyToRead) {
-        readyToRead = false; // Reseteamos el flag
-        
-        float ax, ay, az, gx, gy, gz;
-        if (IMU.accelerationAvailable() && IMU.gyroscopeAvailable()) {
-            IMU.readAcceleration(ax, ay, az);
-            IMU.readGyroscope(gx, gy, gz);
-
-            // Salida para Edge Impulse
-            Serial.print(ax); Serial.print("\t");
-            Serial.print(ay); Serial.print("\t");
-            Serial.print(az); Serial.print("\t");
-            Serial.print(gx); Serial.print("\t");
-            Serial.print(gy); Serial.print("\t");
-            Serial.println(gz);
+            // Enviamos el array de floats como bytes
+            dataChar.writeValue((byte *)data, sizeof(data));
         }
     }
 }
