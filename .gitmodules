@@ -1,0 +1,3 @@
+[submodule "Extraction_Code"]
+	path = Extraction_Code
+	url = https://github.com/edgeimpulse/firmware-arduino-nano-33-ble-sense.git
