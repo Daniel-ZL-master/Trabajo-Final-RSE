@@ -144,7 +144,7 @@ void setup()
         ei_printf("ERR: BLE initialization failed\r\n");
         while (1);
     }
-    BLE.setLocalName("Arduino-ML");
+    BLE.setLocalName("Arduino-ML-Dani");
     BLE.setAdvertisedService(mlService);
     mlService.addCharacteristic(mlOutputChar);
     BLE.addService(mlService);
