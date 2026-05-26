@@ -20,6 +20,7 @@
 #include <Arduino_LPS22HB.h> //Click here to get the library: https://www.arduino.cc/reference/en/libraries/arduino_lps22hb/
 #include <Arduino_HS300x.h> //Click here to get the library: https://www.arduino.cc/reference/en/libraries/arduino_hs300x/
 #include <Arduino_APDS9960.h> //Click here to get the library: https://www.arduino.cc/reference/en/libraries/arduino_apds9960/
+#include <ArduinoBLE.h>
 
 enum sensor_status {
     NOT_USED = -1,
@@ -71,6 +72,36 @@ static bool ei_connect_fusion_list(const char *input_list);
 static int8_t fusion_sensors[N_SENSORS];
 static int fusion_ix = 0;
 
+/* BLE ----------------------------------------------------------------------- */
+BLEService mlService("12345678-1234-1234-1234-123456789abc");
+BLECharacteristic mlOutputChar(
+    "abcd1234-ab12-ab12-ab12-abcdef123456",
+    BLERead | BLENotify,
+    256
+);
+
+/**
+ * @brief Serializa el resultado de clasificación a JSON y lo envía por BLE
+ *        Formato: [{"label":"x","valor":0.0000}, ...]
+ */
+void ble_send_result(ei_impulse_result_t &result) {
+    char json[256];
+    int pos = 0;
+
+    pos += snprintf(json + pos, sizeof(json) - pos, "[");
+    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++) {
+        pos += snprintf(json + pos, sizeof(json) - pos,
+            "{\"label\":\"%s\",\"valor\":%.5f}%s",
+            result.classification[ix].label,
+            result.classification[ix].value,
+            ix < EI_CLASSIFIER_LABEL_COUNT - 1 ? "," : ""
+        );
+    }
+    snprintf(json + pos, sizeof(json) - pos, "]");
+
+    mlOutputChar.writeValue((uint8_t*)json, strlen(json));
+}
+
 /** Used sensors value function connected to label name */
 eiSensors sensors[] =
 {
@@ -108,6 +139,19 @@ void setup()
     while (!Serial);
     Serial.println("Edge Impulse Sensor Fusion Inference\r\n");
 
+    /* Init BLE */
+    if (!BLE.begin()) {
+        ei_printf("ERR: BLE initialization failed\r\n");
+        while (1);
+    }
+    BLE.setLocalName("Arduino-ML");
+    BLE.setAdvertisedService(mlService);
+    mlService.addCharacteristic(mlOutputChar);
+    BLE.addService(mlService);
+    mlOutputChar.writeValue((uint8_t*)"[]", 2); // valor inicial vacío
+    BLE.advertise();
+    ei_printf("BLE listo, esperando conexión...\r\n");
+
     /* Connect used sensors */
     if(ei_connect_fusion_list(EI_CLASSIFIER_FUSION_AXES_STRING) == false) {
         ei_printf("ERR: Errors in sensor list detected\r\n");
@@ -134,6 +178,12 @@ void setup()
 */
 void loop()
 {
+    /* Gestión de conexión BLE */
+    BLEDevice central = BLE.central();
+    if (central) {
+        ei_printf("BLE conectado: %s\r\n", central.address().c_str());
+    }
+
     ei_printf("\nStarting inferencing in 0.02 seconds...\r\n");
 
     delay(20);
@@ -197,6 +247,9 @@ void loop()
 #if EI_CLASSIFIER_HAS_ANOMALY == 1
     ei_printf("    anomaly score: %.3f\r\n", result.anomaly);
 #endif
+
+    /* Enviar resultado por BLE */
+    ble_send_result(result);
 }
 
 #if !defined(EI_CLASSIFIER_SENSOR) || (EI_CLASSIFIER_SENSOR != EI_CLASSIFIER_SENSOR_FUSION && EI_CLASSIFIER_SENSOR != EI_CLASSIFIER_SENSOR_ACCELEROMETER)
