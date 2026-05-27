@@ -8,3 +8,4 @@ Los features extraidos mediante edge impulse usando tanto datos en crudo como an
 
 ### Analisis Features
 Como se puede observar hay dos grandes grupos que separará muy bien, estos grupos son "idle" y el correspondiente a los distintos tipos de colisiones, a parte dentro del grupo al que pertenecen las colisiones se puede ver que estan muy juntas las distntas muestras lo que dificultará en gran medida su clasificación mediante ML.
+Con el entrenamiento adecuado se podría distinguir entre colisiones en un eje u otro lo cual puede ser suficiente para acciones como aviso al usuario o intento de recuperación pero no para los objetivos de este proyecto.
